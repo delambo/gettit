@@ -133,6 +133,17 @@
         <div class="pilwrap">
           <a class="pilcrow" href="#section-11">&#182;</a>
         </div>
+        <p>Version number appended to request urls as a query param. Useful for busting cache.</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>    <span class="nx">version</span><span class="o">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-12'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-12">&#182;</a>
+        </div>
         <p>Callback called after all javascripts/templates are loaded.</p>
       </td>
       <td class=code>
@@ -140,10 +151,10 @@
   <span class="p">};</span></pre></div>
       </td>
     </tr>
-    <tr id='section-12'>
+    <tr id='section-13'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-12">&#182;</a>
+          <a class="pilcrow" href="#section-13">&#182;</a>
         </div>
         <p>Use the <code>options</code> to find out what mode/environment we are in &ndash; production or 
 debug/development &ndash; and load assets accordingly. In production, load js and css
@@ -152,28 +163,28 @@ using the given <code>options</code>. In debug/development, fetch the <code>opti
       <td class=code>
         <div class='highlight'><pre>  <span class="kd">var</span> <span class="nx">load</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
     <span class="kd">var</span> <span class="nx">params</span> <span class="o">=</span> <span class="nx">extend</span><span class="p">(</span><span class="nx">defaults</span><span class="p">,</span> <span class="nx">options</span><span class="p">),</span>
-      <span class="nx">cacheBust</span> <span class="o">=</span> <span class="s1">&#39;?r=&#39;</span> <span class="o">+</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">().</span><span class="nx">getTime</span><span class="p">(),</span>
       <span class="nx">cb</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="nx">params</span><span class="p">.</span><span class="nx">cb</span> <span class="o">&amp;&amp;</span> <span class="nb">eval</span><span class="p">(</span><span class="nx">params</span><span class="p">.</span><span class="nx">cb</span><span class="o">+</span><span class="s1">&#39;()&#39;</span><span class="p">);</span> <span class="p">};</span>
+    <span class="kd">var</span> <span class="nx">cacheBust</span> <span class="o">=</span> <span class="s1">&#39;?r=&#39;</span> <span class="o">+</span> <span class="nx">params</span><span class="p">.</span><span class="nx">version</span> <span class="o">||</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">().</span><span class="nx">getTime</span><span class="p">()</span>
 
     <span class="k">if</span><span class="p">(</span><span class="nx">params</span><span class="p">.</span><span class="nx">env</span> <span class="o">==</span> <span class="s1">&#39;production&#39;</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nx">params</span><span class="p">.</span><span class="nx">isDebugging</span><span class="p">)</span> <span class="p">{</span></pre></div>
-      </td>
-    </tr>
-    <tr id='section-13'>
-      <td class=docs>
-        <div class="pilwrap">
-          <a class="pilcrow" href="#section-13">&#182;</a>
-        </div>
-        <p>Production mode &ndash; fetch assets from params directly.</p>
-      </td>
-      <td class=code>
-        <div class='highlight'><pre>      <span class="nx">fetchAssets</span><span class="p">(</span><span class="nx">params</span><span class="p">.</span><span class="nx">jsAssets</span><span class="p">,</span> <span class="nx">params</span><span class="p">.</span><span class="nx">cssAssets</span><span class="p">,</span> <span class="nx">params</span><span class="p">.</span><span class="nx">path</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="nx">cb</span><span class="p">);</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
     <tr id='section-14'>
       <td class=docs>
         <div class="pilwrap">
           <a class="pilcrow" href="#section-14">&#182;</a>
+        </div>
+        <p>Production mode &ndash; fetch assets from params directly.</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>      <span class="nx">fetchAssets</span><span class="p">(</span><span class="nx">params</span><span class="p">.</span><span class="nx">jsAssets</span><span class="p">,</span> <span class="nx">params</span><span class="p">.</span><span class="nx">cssAssets</span><span class="p">,</span> <span class="nx">params</span><span class="p">.</span><span class="nx">path</span><span class="p">,</span> <span class="nx">cacheBust</span><span class="p">,</span> <span class="nx">cb</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-15'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-15">&#182;</a>
         </div>
         <p>Development/debug mode &ndash; get package names from the filenames in <code>jsAssets</code> and <code>cssAssets</code>. </p>
       </td>
@@ -187,10 +198,10 @@ using the given <code>options</code>. In debug/development, fetch the <code>opti
       <span class="p">});</span></pre></div>
       </td>
     </tr>
-    <tr id='section-15'>
+    <tr id='section-16'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-15">&#182;</a>
+          <a class="pilcrow" href="#section-16">&#182;</a>
         </div>
         <p>Fetch the yaml file. In the callback, parse out and fetch the scripts, templates, and stylesheets.  </p>
       </td>
@@ -204,10 +215,10 @@ using the given <code>options</code>. In debug/development, fetch the <code>opti
         <span class="p">});</span></pre></div>
       </td>
     </tr>
-    <tr id='section-16'>
+    <tr id='section-17'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-16">&#182;</a>
+          <a class="pilcrow" href="#section-17">&#182;</a>
         </div>
         <p>Use the <code>javascripts</code> yaml definition to create <code>scripts</code> and <code>templates</code> file lists.</p>
       </td>
@@ -225,10 +236,10 @@ using the given <code>options</code>. In debug/development, fetch the <code>opti
         </pre></div>
       </td>
     </tr>
-    <tr id='section-17'>
+    <tr id='section-18'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-17">&#182;</a>
+          <a class="pilcrow" href="#section-18">&#182;</a>
         </div>
         <p>Use the <code>stylesheets</code> yaml definition to create a <code>css</code> file list.</p>
       </td>
@@ -240,10 +251,10 @@ using the given <code>options</code>. In debug/development, fetch the <code>opti
       </pre></div>
       </td>
     </tr>
-    <tr id='section-18'>
+    <tr id='section-19'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-18">&#182;</a>
+          <a class="pilcrow" href="#section-19">&#182;</a>
         </div>
         <p>Fetch the assets parsed from yaml. In the callback, fetch and compile the templates.</p>
       </td>
@@ -275,10 +286,10 @@ using the given <code>options</code>. In debug/development, fetch the <code>opti
         <div class='highlight'><pre>  </pre></div>
       </td>
     </tr>
-    <tr id='section-20'>
+    <tr id='section-21'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-20">&#182;</a>
+          <a class="pilcrow" href="#section-21">&#182;</a>
         </div>
         <p>Given arrays of <code>js</code> and <code>css</code> files, prepends the <code>path</code> and fetches them. Javascript is
 downloaded in parallel, but executed in order. If <code>bust</code> is defined, then that value is 
@@ -305,10 +316,10 @@ appended to each url. The callback ,<code>cb</code>, is fired after the last jav
   </pre></div>
       </td>
     </tr>
-    <tr id='section-21'>
+    <tr id='section-22'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-21">&#182;</a>
+          <a class="pilcrow" href="#section-22">&#182;</a>
         </div>
         <p>Using xhr, fetches the text file at the given <code>url</code>. If <code>bust</code> is defined, then that value is 
 appended to the fetch url. The callback, <code>cb</code>, is fired with the returned <code>responseText</code>.</p>
@@ -320,10 +331,10 @@ appended to the fetch url. The callback, <code>cb</code>, is fired with the retu
     </pre></div>
       </td>
     </tr>
-    <tr id='section-22'>
+    <tr id='section-23'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-22">&#182;</a>
+          <a class="pilcrow" href="#section-23">&#182;</a>
         </div>
         <p>Setup a CORS request object for IE8+.</p>
       </td>
@@ -341,10 +352,10 @@ appended to the fetch url. The callback, <code>cb</code>, is fired with the retu
   <span class="p">}</span></pre></div>
       </td>
     </tr>
-    <tr id='section-23'>
+    <tr id='section-24'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-23">&#182;</a>
+          <a class="pilcrow" href="#section-24">&#182;</a>
         </div>
         <p>Compiles templates using the defined <code>compile</code> api to the given <code>namespace</code>, with 
 the given <code>name</code>, compiled with the given <code>text</code>. If <code>func</code> is defined, then it will 
@@ -425,10 +436,10 @@ a variant of John Resig&rsquo;s micro templating.</p>
         <div class='highlight'><pre>  </pre></div>
       </td>
     </tr>
-    <tr id='section-25'>
+    <tr id='section-26'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-25">&#182;</a>
+          <a class="pilcrow" href="#section-26">&#182;</a>
         </div>
         <p>Ecapsulates the $LAB.js object &ndash; passed into the anonoymous function.</p>
       </td>
@@ -436,10 +447,10 @@ a variant of John Resig&rsquo;s micro templating.</p>
         <div class='highlight'><pre>  <span class="kd">var</span> <span class="nx">loader</span> <span class="o">=</span> <span class="p">{};</span></pre></div>
       </td>
     </tr>
-    <tr id='section-26'>
+    <tr id='section-27'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-26">&#182;</a>
+          <a class="pilcrow" href="#section-27">&#182;</a>
         </div>
         <p>LAB.js (LABjs :: Loading And Blocking JavaScript)<br>
 v2.0.3 &copy; Kyle Simpson<br>
@@ -463,10 +474,10 @@ MIT License  </p>
         <div class='highlight'><pre></pre></div>
       </td>
     </tr>
-    <tr id='section-28'>
+    <tr id='section-29'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-28">&#182;</a>
+          <a class="pilcrow" href="#section-29">&#182;</a>
         </div>
         <p>Slightly reduced, modified, and fixed with original credit going to:<br>
 Author: Diogo Costa<br>
@@ -869,10 +880,10 @@ Copyright &copy; 2011 Diogo Costa (costa.h4evr@gmail.com)  </p>
         <div class='highlight'><pre>  </pre></div>
       </td>
     </tr>
-    <tr id='section-30'>
+    <tr id='section-31'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-30">&#182;</a>
+          <a class="pilcrow" href="#section-31">&#182;</a>
         </div>
         <p>Grab the gettit script tag, parse the attributes, and load assets.
 If gettit is script loaded asynchronously, then it&rsquo;s required to be the first child of the <code>head</code> or <code>documentElement</code>.
@@ -906,6 +917,7 @@ Otherwise, if it was loaded with a normal <code>&lt;script&gt;</code> include, i
     <span class="nx">assets</span><span class="o">:</span> <span class="nx">tag</span><span class="p">.</span><span class="nx">getAttribute</span><span class="p">(</span><span class="s1">&#39;data-assets&#39;</span><span class="p">)</span> <span class="o">||</span> <span class="kc">undefined</span><span class="p">,</span>
     <span class="nx">env</span><span class="o">:</span> <span class="nx">tag</span><span class="p">.</span><span class="nx">getAttribute</span><span class="p">(</span><span class="s1">&#39;data-env&#39;</span><span class="p">)</span> <span class="o">||</span> <span class="kc">undefined</span><span class="p">,</span>
     <span class="nx">path</span><span class="o">:</span> <span class="nx">tag</span><span class="p">.</span><span class="nx">getAttribute</span><span class="p">(</span><span class="s1">&#39;data-env-path&#39;</span><span class="p">)</span> <span class="o">||</span> <span class="kc">undefined</span><span class="p">,</span>
+    <span class="nx">version</span><span class="o">:</span> <span class="nx">tag</span><span class="p">.</span><span class="nx">getAttribute</span><span class="p">(</span><span class="s1">&#39;data-version&#39;</span><span class="p">)</span> <span class="o">||</span> <span class="kc">undefined</span><span class="p">,</span>
     <span class="nx">cb</span><span class="o">:</span> <span class="nx">tag</span><span class="p">.</span><span class="nx">getAttribute</span><span class="p">(</span><span class="s1">&#39;data-callback&#39;</span><span class="p">)</span> <span class="o">||</span> <span class="kc">undefined</span>
   <span class="p">});</span>
   
