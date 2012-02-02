@@ -1,3 +1,9 @@
+/*
+gettit.js v0.3.2
+
+The MIT License
+Copyright (c) 2012 Matthew DeLambo <delambo@gmail.com>
+*/
 (function() {
 
 	var defaults = {
@@ -56,22 +62,26 @@
 				});
 
 				// Use the `javascripts` yaml definition to create `scripts` and `templates` file lists.
-				each(keys(yaml.javascripts), function(packageName) {
-					if(indexOf(jsPackages, packageName) > -1) {
-						each(yaml.javascripts[packageName], function(js) {
-							if(js.substr(js.length-3) == '.js')
-								scripts.push(js);
-							else if(js.substr(js.length-params.templateExt.length) == params.templateExt)
-								templates.push(js);
-						});
-					}
-				});
-				
+				if(yaml.javascripts) {
+					each(jsPackages, function(packageName) {
+						if(yaml.javascripts[packageName]) {
+							each(yaml.javascripts[packageName], function(js) {
+								if(js.substr(js.length-3) == '.js')
+									scripts.push(js);
+								else if(js.substr(js.length-params.templateExt.length) == params.templateExt)
+									templates.push(js);
+							});
+						}
+					});
+				}
+
 				// Use the `stylesheets` yaml definition to create a `css` file list.
-				each(keys(yaml.stylesheets), function(packageName) {
-					if(indexOf(cssPackages, packageName) > -1)
-						css = css.concat(yaml.stylesheets[packageName]);
-				});
+				if(yaml.stylesheets) {
+					each(cssPackages, function(packageName) {
+						if(yaml.stylesheets[packageName])
+							css = css.concat(yaml.stylesheets[packageName]);
+					});
+				}
 			
 				// Fetch the assets parsed from yaml. In the callback, fetch and compile the templates.
 				fetchAssets(scripts, css, params.path, cacheBust, function() {
