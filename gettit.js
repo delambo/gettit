@@ -57,9 +57,9 @@
 
 				// Use the `javascripts` yaml definition to create `scripts` and `templates` file lists.
 				if(yaml.javascripts) {
-					each(jsPackages, function(package) {
-						if(yaml.javascripts[package]) {
-							each(yaml.javascripts[package], function(js) {
+					each(jsPackages, function(packageName) {
+						if(yaml.javascripts[packageName]) {
+							each(yaml.javascripts[packageName], function(js) {
 								if(js.substr(js.length-3) == '.js')
 									scripts.push(js);
 								else if(js.substr(js.length-params.templateExt.length) == params.templateExt)
@@ -71,9 +71,9 @@
 
 				// Use the `stylesheets` yaml definition to create a `css` file list.
 				if(yaml.stylesheets) {
-					each(cssPackages, function(package) {
-						if(yaml.stylesheets[package])
-							css = css.concat(yaml.stylesheets[package]);
+					each(cssPackages, function(packageName) {
+						if(yaml.stylesheets[packageName])
+							css = css.concat(yaml.stylesheets[packageName]);
 					});
 				}
 			
