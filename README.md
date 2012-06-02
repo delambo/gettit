@@ -6,7 +6,7 @@ Where jammit falls in love with javascript.
 
 [jammit](http://documentcloud.github.com/jammit/) provides the ability to package, concatenate and compress javascript and CSS resources and allows you to pre cache assets by using the eponymous utility. However, to take advantage of the packaging and templating facilities the application has to be running in a Rails environment. This is where gettit comes in.
 
-With gettit, you can take advantage of all the jammit goodness - configuration/assets definition, packaging based on environment, debug mode, etc - but without Rails. In place of Rails templating, gettit uses a single script tag for configuration so it should work in any framework/environment.
+With gettit, you can take advantage of all the jammit goodness - configuration/assets definition, packaging based on environment, debug mode, javascript templating (jst), etc. - without Rails. In place of Rails templating, gettit uses a single script tag for configuration so it should work in any framework/environment.
 
 ### Docs
 
@@ -28,13 +28,13 @@ With gettit, you can take advantage of all the jammit goodness - configuration/a
 
 ### Example Script Tag
 
-The following is an example script that would be included on a page (static, dynamically injected, or possibly generated/templated):
+The following is an example script that would be included on a page (static, dynamic script injection, or possibly generated/templated) to initialize gettit:
 
      <script type = "text/javascript" 
              src = "gettit.js"
              data-assets = "assets.yml"
-             data-js-assets = "js/core.js, js/common.js, js/util.js"
-             data-css-assets = "css/core.css, css/common.css"
+             data-js-assets = "build/core.js, build/common.js, build/util.js"
+             data-css-assets = "build/core.css, build/common.css"
              data-env = "production"
              data-version = "2.1.1"
              data-env-path = "http://example.com/assets/"
@@ -82,7 +82,7 @@ Comma-delimited list of paths to the packaged css files, relative to the path in
 
 ### data-env
 
-Environment - development or production - which determines how gettit loads. In development, gettit will load files listed under the packages in the assets.yml individually, and will compile any javascript templates. In production, gettit will load the asset packages listed in the `data-js-assets` and `data-css-assets`.
+Environment - "development" or "production" - which determines how gettit loads. In development, gettit will load files listed under the packages in the assets.yml individually, and will compile any javascript templates. In production, gettit will load the asset packages listed in the `data-js-assets` and `data-css-assets`.
 
 ### data-version
 

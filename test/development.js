@@ -18,7 +18,7 @@ $(document).ready(function() {
 			equal(document.getElementsByTagName('script').length, scriptCount + 3);
 			equal(document.getElementsByTagName('link').length, stylesheetCount + 2);
 			equal
-			start();  
+			start();
 		}, 1200)  
 	})
 
@@ -27,9 +27,10 @@ $(document).ready(function() {
 		loadScript('', '', 'dev2/micro-assets.yml', 'dev2/js/testj1.js', '', 'development');	
 
 		setTimeout(function() {
-			equal(window.JST.test1({test1:'eat',test2:'fork'}), '<div>eat me</div>\n<div>fork socket</div>\n');
-			equal(window.JST.test2({test:'east'}), '<div>east coast hackers</div>\n');
-			start();  
+			equal(window.JST['test1/test']({test1:'eat',test2:'fork'}), '<div>eat me</div>\n<div>fork socket</div>\n');
+			equal(window.JST['test2/test']({test:'east'}), '<div>east coast hackers</div>\n');
+			delete window.JST;
+			start();
 		}, 1200)  
 	})
 
@@ -39,8 +40,9 @@ $(document).ready(function() {
 		loadScript('', '', 'dev2/underscore-assets.yml', 'http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.2.2/underscore-min.js,dev2/js/testj1.js', '', 'development');
 
 		setTimeout(function() {
-			equal(window.JST.test3({test1:'eat',test2:'fork'}), '<div>eat me</div><div>fork socket</div>');
-			equal(window.JST.test4({test:'east'}), '<div>east coast hackers</div>');
+			equal(window.JST['test1/test']({test1:'eat',test2:'fork'}), '<div>eat me</div><div>fork socket</div>');
+			equal(window.JST['test2/test']({test:'east'}), '<div>east coast hackers</div>');
+			delete window.JST;
 			start();  
 		}, 1200)  
 	})
@@ -50,8 +52,9 @@ $(document).ready(function() {
 		loadScript('', '', 'dev2/namespace-assets.yml', 'dev2/js/testj1.js', '', 'development');
 
 		setTimeout(function() {
-			equal(window.dev2.test1({test1:'eat',test2:'fork'}), '<div>eat me</div>\n<div>fork socket</div>\n');
-			equal(window.dev2.test2({test:'east'}), '<div>east coast hackers</div>\n');
+			equal(window.dev2['test1/test']({test1:'eat',test2:'fork'}), '<div>eat me</div>\n<div>fork socket</div>\n');
+			equal(window.dev2['test2/test']({test:'east'}), '<div>east coast hackers</div>\n');
+			delete window.JST;
 			start();  
 		}, 1200)  
 	})
@@ -61,8 +64,8 @@ $(document).ready(function() {
 		loadScript('', '', 'dev2/extension-assets.yml', 'dev2/js/testj1.js', '', 'development');
 
 		setTimeout(function() {
-			equal(window.dev2.test3({test1:'eat',test2:'fork'}), '<div>eat me</div>\n<div>fork socket</div>\n');
-			equal(window.dev2.test4({test:'east'}), '<div>east coast hackers</div>\n');
+			equal(window.dev2['test1/test']({test1:'eat',test2:'fork'}), '<div>eat me</div>\n<div>fork socket</div>\n');
+			equal(window.dev2['test2/test']({test:'east'}), '<div>east coast hackers</div>\n');
 			start();  
 		}, 1200)  
 	})

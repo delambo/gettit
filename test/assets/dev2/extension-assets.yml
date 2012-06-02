@@ -9,5 +9,5 @@ javascript_compressor: closure
 
 javascripts:
   testj1:
-    - dev2/js/test3.fuko
-    - dev2/js/test4.fuko
+    - dev2/template/test1/test.fuko
+    - dev2/template/test2/test.fuko

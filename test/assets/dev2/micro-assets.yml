@@ -7,6 +7,6 @@ javascript_compressor: closure
 
 javascripts:
   testj1:
-    - dev2/js/test1.jst
-    - dev2/js/test2.jst
+    - dev2/templates/test1/test.jst
+    - dev2/templates/test2/test.jst
 

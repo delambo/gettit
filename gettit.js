@@ -1,5 +1,8 @@
 (function() {
 
+	// Default Configuration
+	// ---------------------
+
 	var defaults = {
 		// True when url param debug_assets=true.
 		isDebugging: false,
@@ -25,20 +28,22 @@
 		cb: '(function(){})'
 	};
 
+	// Main Load
+	// ---------
+
 	// Use the `options` to find out what mode/environment we are in - production or 
 	// debug/development - and load assets accordingly. In production, load js and css
 	// using the given `options`. In debug/development, fetch the `options.assets` file.
 	var load = function(options) {
 		var params = extend(defaults, options),
-			cb = function() { params.cb && eval(params.cb+'()'); };
-		var cacheBust = '?r=' + params.version || new Date().getTime()
+			cb = function() { params.cb && eval('('+params.cb+')()'); };
 
-		if(params.env == 'production' && !params.isDebugging) {
+		if (params.env == 'production' && !params.isDebugging) {
 			// Production mode - fetch assets from params directly.
-			fetchAssets(params.jsAssets, params.cssAssets, params.path, cacheBust, cb);
+			fetchAssets(params.jsAssets, params.cssAssets, params.path, '?r=' + params.version, cb);
 		} else {
 			// Development/debug mode - get package names from the filenames in `jsAssets` and `cssAssets`. 
-			var jsPackages = [], cssPackages = [];
+			var jsPackages = [], cssPackages = [], cacheBust = '?r=' + new Date().getTime();
 			each(params.jsAssets, function(asset) {
 				jsPackages.push(getFileName(asset));
 			});
@@ -56,35 +61,62 @@
 				});
 
 				// Use the `javascripts` yaml definition to create `scripts` and `templates` file lists.
-				if(yaml.javascripts) {
+				if (yaml.javascripts) {
 					each(jsPackages, function(packageName) {
+						var pkgTemplates = [], prefix, name;
 						if(yaml.javascripts[packageName]) {
+							// Jammit extracts template names by using the path from the common prefix of all 
+							// templates in a package to the extension - /common/prefix/`templ/name`.jst
 							each(yaml.javascripts[packageName], function(js) {
-								if(js.substr(js.length-3) == '.js')
+								if (js.substr(js.length-3) == '.js')
 									scripts.push(js);
-								else if(js.substr(js.length-params.templateExt.length) == params.templateExt)
-									templates.push(js);
+								else if (js.substr(js.length-params.templateExt.length) == params.templateExt)
+									pkgTemplates.push(js);
 							});
+							// Add an object of {path, name} to the `templates` array for each found template.
+							if (pkgTemplates.length) {
+								prefix = findCommonPathPrefix(pkgTemplates);
+								each(pkgTemplates, function(template) {
+									// Extract the template name: template path between the common prefix and the extension.
+									if (prefix === template) name = getFileName(template);
+									else name = new RegExp("^("+prefix+")(.+)(?=\\.)").exec(template)[2];
+									templates.push({ path: template, name: name });
+								});
+							}
 						}
 					});
 				}
 
 				// Use the `stylesheets` yaml definition to create a `css` file list.
-				if(yaml.stylesheets) {
+				if (yaml.stylesheets) {
 					each(cssPackages, function(packageName) {
-						if(yaml.stylesheets[packageName])
-							css = css.concat(yaml.stylesheets[packageName]);
+						// Remove any appended '-datauri', if it exists, to get the correct package name.
+						var pkg = packageName.replace('-datauri', '');
+						if (yaml.stylesheets[pkg]) {
+							css = css.concat(yaml.stylesheets[pkg]);
+						}
 					});
 				}
 			
-				// Fetch the assets parsed from yaml. In the callback, fetch and compile the templates.
-				fetchAssets(scripts, css, params.path, cacheBust, function() {
-					if(!templates.length) cb();
-					var nTemplates = 0;
-					each(templates, function(template) {
-						fetchText(params.path+template, cacheBust, function(text) {
-							templateCompiler.compile(params.templateNs, getFileName(template), text, params.templateFunc);
-							if(++nTemplates === templates.length) cb();
+				// Fetch the assets parsed from the assets yaml definition.
+				var seenTriggers = 0, nTriggers = templates.length + 1, templateFns = [];
+				// If there are no scripts or templates then we can immediately execute the callback.
+				if (!scripts.length && !templates.length) cb();
+				// Setup a callback trigger that gathers any incoming functions until the `nTriggers`
+				// has been seen, then executes all of the gathered functions.
+				var triggerCallback = function(fn) {
+					if (fn) templateFns.push(fn);
+					if (++seenTriggers == nTriggers) {
+						each(templateFns, function(fn) { fn() });
+						cb();
+					}
+				}
+				fetchAssets(scripts, css, params.path, cacheBust, triggerCallback);
+				// Fetch the templates.
+				each(templates, function(template) {
+					fetchText(params.path+template.path, cacheBust, function(text) {
+						triggerCallback(function() {
+							templateCompiler.compile(params.templateNs, template.name, text, params.templateFunc);
 						});
 					});
 				});
@@ -100,21 +132,24 @@
 	// downloaded in parallel, but executed in order. If `bust` is defined, then that value is 
 	// appended to each url. The callback ,`cb`, is fired after the last javascript executes.
 	function fetchAssets(js, css, path, bust, cb) {
-		if(css) {
-			each(css, function(file) { 
-				var el = document.createElement('link');
-				el.href = (file.indexOf('://')  >  0  ? file : path + file) + (bust?bust:'');
-				el.rel = 'stylesheet';
-				el.type = 'text/css';
-				document.getElementsByTagName('head')[0].appendChild(el);
-			});
-		}
 		each(js, function(file) {
 			var jsfile = (file.indexOf('://')  >  0  ? file : path + file) + (bust?bust:'');
 			loader.$LAB.queueScript(jsfile).queueWait();
 		});
 		loader.$LAB.queueWait(function() { cb && cb(); });
 		loader.$LAB.runQueue();
+		setTimeout(function() {
+		if (css) {
+			var head = document.getElementsByTagName('head')[0];
+			each(css, function(file) { 
+				var el = document.createElement('link');
+				el.href = (file.indexOf('://')  >  0  ? file : path + file) + (bust?bust:'');
+				el.rel = 'stylesheet';
+				el.type = 'text/css';
+				head.appendChild(el);
+			});
+		}
+		}, 1);
 	}
 	
 	// Using xhr, fetches the text file at the given `url`. If `bust` is defined, then that value is 
@@ -127,10 +162,9 @@
 		if (isIE && isCrossDomain) xhr = new XDomainRequest();
 		else xhr = new XMLHttpRequest();
 		
-		xhr.open("GET", url + (bust?bust:''));
+		xhr.open("GET", url + (bust?bust:''), true);
 		xhr.onreadystatechange = function() {
-			if (xhr.readyState == 4 && xhr.status == 200)
-				cb(xhr.responseText);
+			if (xhr.readyState == 4 && xhr.status == 200) cb(xhr.responseText);
 			return true;
 		}
 		xhr.send(null);
@@ -142,7 +176,7 @@
 	// a variant of John Resig's micro templating.
 	var templateCompiler = (function() {
 		function compileMicroTemplate(obj, name, text) {
-			obj[name] = function(a){return new Function("obj","var __p=[],print=function(){__p.push.apply(__p,arguments);};with(obj||{}){__p.push('"+a.replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/<%=([\s\S]+?)%>/g,function(a,c){return"',"+c.replace(/\\'/g,"'")+",'"}).replace(/<%([\s\S]+?)%>/g,function(a,c){return"');"+c.replace(/\\'/g,"'").replace(/[\r\n\t]/g," ")+"__p.push('"}).replace(/\r/g,"\\r").replace(/\n/g,"\\n").replace(/\t/g,"\\t")+"');}return __p.join('');")}(text);
+			obj[name] = function(str){var fn = new Function('obj','var __p=[],print=function(){__p.push.apply(__p,arguments);};with(obj||{}){__p.push(\''+str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/<%=([\s\S]+?)%>/g,function(match,code){return "',"+code.replace(/\\'/g, "'")+",'";}).replace(/<%([\s\S]+?)%>/g,function(match,code){return "');"+code.replace(/\\'/g, "'").replace(/[\r\n\t]/g,' ')+"__p.push('";}).replace(/\r/g,'\\r').replace(/\n/g,'\\n').replace(/\t/g,'\\t')+"');}return __p.join('');");return fn;}(text);
 		}
 
 		function compileFunctionTemplate(obj, name, text, func) {
@@ -161,7 +195,7 @@
 	})();
 	
 	function each(array, iterator, context) {
-		if(array == null) return;
+		if (array == null) return;
 		for(var i = 0, l = array.length; i < l; i++) {
 			if(i in array && iterator.call(context, array[i], i, array) === {}) return;
 		}				
@@ -174,7 +208,7 @@
 	}
 
 	function indexOf(array, item) {
-		if(array == null) return -1;
+		if (array == null) return -1;
 		for(var i = 0, l = array.length; i < l; i++) if (array[i] === item) return i;
 		return -1;
 	}
@@ -196,9 +230,23 @@
 	}
 	
 	function getFileName(path) {
-		if(!path) return null;
-		if(path.indexOf('?') > -1) path = path.substring(0, path.indexOf('?'))
-		return path.match(/(\w*)\.\w*$/)[1];
+		if (!path) return null;
+		if (path.indexOf('?') > -1) path = path.substring(0, path.indexOf('?'))
+		return path.match(/([\w|\-|\_]*)\.\w*$/)[1];
+	}
+
+	// Finds and returns a common path prefix for the given list of `items`.
+	function findCommonPathPrefix(items) {
+		var item1, item2, s, items = items.slice(0).sort();
+		item1 = items[0];
+		s = item1.length;
+		item2 = items.pop();
+		while(s && item2.indexOf(item1) == -1) {
+			item1 = item1.substring(0, --s);
+		}
+		// The prefix must end in a slash..
+		item1 = item1.substring(0, item1.lastIndexOf('/') + 1);
+		return item1;
 	}
 
 	// Script Loader
@@ -210,9 +258,14 @@
 	// LAB.js (LABjs :: Loading And Blocking JavaScript)  
 	// v2.0.3 (c) Kyle Simpson  
 	// MIT License  
-	(function(o){var K=o.$LAB,y="UseLocalXHR",z="AlwaysPreserveOrder",u="AllowDuplicates",A="CacheBust",B="BasePath",C=/^[^?#]*\//.exec(location.href)[0],D=/^\w+\:\/\/\/?[^\/]+/.exec(C)[0],i=document.head||document.getElementsByTagName("head"),L=(o.opera&&Object.prototype.toString.call(o.opera)=="[object Opera]")||("MozAppearance"in document.documentElement.style),q=document.createElement("script"),E=typeof q.preload=="boolean",r=E||(q.readyState&&q.readyState=="uninitialized"),F=!r&&q.async===true,M=!r&&!F&&!L;function G(a){return Object.prototype.toString.call(a)=="[object Function]"}function H(a){return Object.prototype.toString.call(a)=="[object Array]"}function N(a,c){var b=/^\w+\:\/\//;if(/^\/\/\/?/.test(a)){a=location.protocol+a}else if(!b.test(a)&&a.charAt(0)!="/"){a=(c||"")+a}return b.test(a)?a:((a.charAt(0)=="/"?D:C)+a)}function s(a,c){for(var b in a){if(a.hasOwnProperty(b)){c[b]=a[b]}}return c}function O(a){var c=false;for(var b=0;b<a.scripts.length;b++){if(a.scripts[b].ready&&a.scripts[b].exec_trigger){c=true;a.scripts[b].exec_trigger();a.scripts[b].exec_trigger=null}}return c}function t(a,c,b,d){a.onload=a.onreadystatechange=function(){if((a.readyState&&a.readyState!="complete"&&a.readyState!="loaded")||c[b])return;a.onload=a.onreadystatechange=null;d()}}function I(a){a.ready=a.finished=true;for(var c=0;c<a.finished_listeners.length;c++){a.finished_listeners[c]()}a.ready_listeners=[];a.finished_listeners=[]}function P(d,f,e,g,h){setTimeout(function(){var a,c=f.real_src,b;if("item"in i){if(!i[0]){setTimeout(arguments.callee,25);return}i=i[0]}a=document.createElement("script");if(f.type)a.type=f.type;if(f.charset)a.charset=f.charset;if(h){if(r){e.elem=a;if(E){a.preload=true;a.onpreload=g}else{a.onreadystatechange=function(){if(a.readyState=="loaded")g()}}a.src=c}else if(h&&c.indexOf(D)==0&&d[y]){b=new XMLHttpRequest();b.onreadystatechange=function(){if(b.readyState==4){b.onreadystatechange=function(){};e.text=b.responseText+"\n//@ sourceURL="+c;g()}};b.open("GET",c);b.send()}else{a.type="text/cache-script";t(a,e,"ready",function(){i.removeChild(a);g()});a.src=c;i.insertBefore(a,i.firstChild)}}else if(F){a.async=false;t(a,e,"finished",g);a.src=c;i.insertBefore(a,i.firstChild)}else{t(a,e,"finished",g);a.src=c;i.insertBefore(a,i.firstChild)}},0)}function J(){var l={},Q=r||M,n=[],p={},m;l[y]=true;l[z]=false;l[u]=false;l[A]=false;l[B]="";function R(a,c,b){var d;function f(){if(d!=null){d=null;I(b)}}if(p[c.src].finished)return;if(!a[u])p[c.src].finished=true;d=b.elem||document.createElement("script");if(c.type)d.type=c.type;if(c.charset)d.charset=c.charset;t(d,b,"finished",f);if(b.elem){b.elem=null}else if(b.text){d.onload=d.onreadystatechange=null;d.text=b.text}else{d.src=c.real_src}i.insertBefore(d,i.firstChild);if(b.text){f()}}function S(c,b,d,f){var e,g,h=function(){b.ready_cb(b,function(){R(c,b,e)})},j=function(){b.finished_cb(b,d)};b.src=N(b.src,c[B]);b.real_src=b.src+(c[A]?((/\?.*$/.test(b.src)?"&_":"?_")+~~(Math.random()*1E9)+"="):"");if(!p[b.src])p[b.src]={items:[],finished:false};g=p[b.src].items;if(c[u]||g.length==0){e=g[g.length]={ready:false,finished:false,ready_listeners:[h],finished_listeners:[j]};P(c,b,e,((f)?function(){e.ready=true;for(var a=0;a<e.ready_listeners.length;a++){e.ready_listeners[a]()}e.ready_listeners=[]}:function(){I(e)}),f)}else{e=g[0];if(e.finished){j()}else{e.finished_listeners.push(j)}}}function v(){var e,g=s(l,{}),h=[],j=0,w=false,k;function T(a,c){a.ready=true;a.exec_trigger=c;x()}function U(a,c){a.ready=a.finished=true;a.exec_trigger=null;for(var b=0;b<c.scripts.length;b++){if(!c.scripts[b].finished)return}c.finished=true;x()}function x(){while(j<h.length){if(G(h[j])){try{h[j++]()}catch(err){}continue}else if(!h[j].finished){if(O(h[j]))continue;break}j++}if(j==h.length){w=false;k=false}}function V(){if(!k||!k.scripts){h.push(k={scripts:[],finished:true})}}e={script:function(){for(var f=0;f<arguments.length;f++){(function(a,c){var b;if(!H(a)){c=[a]}for(var d=0;d<c.length;d++){V();a=c[d];if(G(a))a=a();if(!a)continue;if(H(a)){b=[].slice.call(a);b.unshift(d,1);[].splice.apply(c,b);d--;continue}if(typeof a=="string")a={src:a};a=s(a,{ready:false,ready_cb:T,finished:false,finished_cb:U});k.finished=false;k.scripts.push(a);S(g,a,k,(Q&&w));w=true;if(g[z])e.wait()}})(arguments[f],arguments[f])}return e},wait:function(){if(arguments.length>0){for(var a=0;a<arguments.length;a++){h.push(arguments[a])}k=h[h.length-1]}else k=false;x();return e}};return{script:e.script,wait:e.wait,setOptions:function(a){s(a,g);return e}}}m={setGlobalDefaults:function(a){s(a,l);return m},setOptions:function(){return v().setOptions.apply(null,arguments)},script:function(){return v().script.apply(null,arguments)},wait:function(){return v().wait.apply(null,arguments)},queueScript:function(){n[n.length]={type:"script",args:[].slice.call(arguments)};return m},queueWait:function(){n[n.length]={type:"wait",args:[].slice.call(arguments)};return m},runQueue:function(){var a=m,c=n.length,b=c,d;for(;--b>=0;){d=n.shift();a=a[d.type].apply(null,d.args)}return a},noConflict:function(){o.$LAB=K;return m},sandbox:function(){return J()}};return m}o.$LAB=J();(function(a,c,b){if(document.readyState==null&&document[a]){document.readyState="loading";document[a](c,b=function(){document.removeEventListener(c,b,false);document.readyState="complete"},false)}})("addEventListener","DOMContentLoaded")})(loader);
 	
 	
+/*! LAB.js (LABjs :: Loading And Blocking JavaScript)
+    v2.0.3 (c) Kyle Simpson
+    MIT License
+*/
+(function(o){var K=o.$LAB,y="UseLocalXHR",z="AlwaysPreserveOrder",u="AllowDuplicates",A="CacheBust",B="BasePath",C=/^[^?#]*\//.exec(location.href)[0],D=/^\w+\:\/\/\/?[^\/]+/.exec(C)[0],i=document.head||document.getElementsByTagName("head"),L=(o.opera&&Object.prototype.toString.call(o.opera)=="[object Opera]")||("MozAppearance"in document.documentElement.style),q=document.createElement("script"),E=typeof q.preload=="boolean",r=E||(q.readyState&&q.readyState=="uninitialized"),F=!r&&q.async===true,M=!r&&!F&&!L;function G(a){return Object.prototype.toString.call(a)=="[object Function]"}function H(a){return Object.prototype.toString.call(a)=="[object Array]"}function N(a,c){var b=/^\w+\:\/\//;if(/^\/\/\/?/.test(a)){a=location.protocol+a}else if(!b.test(a)&&a.charAt(0)!="/"){a=(c||"")+a}return b.test(a)?a:((a.charAt(0)=="/"?D:C)+a)}function s(a,c){for(var b in a){if(a.hasOwnProperty(b)){c[b]=a[b]}}return c}function O(a){var c=false;for(var b=0;b<a.scripts.length;b++){if(a.scripts[b].ready&&a.scripts[b].exec_trigger){c=true;a.scripts[b].exec_trigger();a.scripts[b].exec_trigger=null}}return c}function t(a,c,b,d){a.onload=a.onreadystatechange=function(){if((a.readyState&&a.readyState!="complete"&&a.readyState!="loaded")||c[b])return;a.onload=a.onreadystatechange=null;d()}}function I(a){a.ready=a.finished=true;for(var c=0;c<a.finished_listeners.length;c++){a.finished_listeners[c]()}a.ready_listeners=[];a.finished_listeners=[]}function P(d,f,e,g,h){setTimeout(function(){var a,c=f.real_src,b;if("item"in i){if(!i[0]){setTimeout(arguments.callee,25);return}i=i[0]}a=document.createElement("script");if(f.type)a.type=f.type;if(f.charset)a.charset=f.charset;if(h){if(r){e.elem=a;if(E){a.preload=true;a.onpreload=g}else{a.onreadystatechange=function(){if(a.readyState=="loaded")g()}}a.src=c}else if(h&&c.indexOf(D)==0&&d[y]){b=new XMLHttpRequest();b.onreadystatechange=function(){if(b.readyState==4){b.onreadystatechange=function(){};e.text=b.responseText+"\n//@ sourceURL="+c;g()}};b.open("GET",c);b.send()}else{a.type="text/cache-script";t(a,e,"ready",function(){i.removeChild(a);g()});a.src=c;i.insertBefore(a,i.firstChild)}}else if(F){a.async=false;t(a,e,"finished",g);a.src=c;i.insertBefore(a,i.firstChild)}else{t(a,e,"finished",g);a.src=c;i.insertBefore(a,i.firstChild)}},0)}function J(){var l={},Q=r||M,n=[],p={},m;l[y]=true;l[z]=false;l[u]=false;l[A]=false;l[B]="";function R(a,c,b){var d;function f(){if(d!=null){d=null;I(b)}}if(p[c.src].finished)return;if(!a[u])p[c.src].finished=true;d=b.elem||document.createElement("script");if(c.type)d.type=c.type;if(c.charset)d.charset=c.charset;t(d,b,"finished",f);if(b.elem){b.elem=null}else if(b.text){d.onload=d.onreadystatechange=null;d.text=b.text}else{d.src=c.real_src}i.insertBefore(d,i.firstChild);if(b.text){f()}}function S(c,b,d,f){var e,g,h=function(){b.ready_cb(b,function(){R(c,b,e)})},j=function(){b.finished_cb(b,d)};b.src=N(b.src,c[B]);b.real_src=b.src+(c[A]?((/\?.*$/.test(b.src)?"&_":"?_")+~~(Math.random()*1E9)+"="):"");if(!p[b.src])p[b.src]={items:[],finished:false};g=p[b.src].items;if(c[u]||g.length==0){e=g[g.length]={ready:false,finished:false,ready_listeners:[h],finished_listeners:[j]};P(c,b,e,((f)?function(){e.ready=true;for(var a=0;a<e.ready_listeners.length;a++){e.ready_listeners[a]()}e.ready_listeners=[]}:function(){I(e)}),f)}else{e=g[0];if(e.finished){j()}else{e.finished_listeners.push(j)}}}function v(){var e,g=s(l,{}),h=[],j=0,w=false,k;function T(a,c){a.ready=true;a.exec_trigger=c;x()}function U(a,c){a.ready=a.finished=true;a.exec_trigger=null;for(var b=0;b<c.scripts.length;b++){if(!c.scripts[b].finished)return}c.finished=true;x()}function x(){while(j<h.length){if(G(h[j])){h[j++]();continue}else if(!h[j].finished){if(O(h[j]))continue;break}j++}if(j==h.length){w=false;k=false}}function V(){if(!k||!k.scripts){h.push(k={scripts:[],finished:true})}}e={script:function(){for(var f=0;f<arguments.length;f++){(function(a,c){var b;if(!H(a)){c=[a]}for(var d=0;d<c.length;d++){V();a=c[d];if(G(a))a=a();if(!a)continue;if(H(a)){b=[].slice.call(a);b.unshift(d,1);[].splice.apply(c,b);d--;continue}if(typeof a=="string")a={src:a};a=s(a,{ready:false,ready_cb:T,finished:false,finished_cb:U});k.finished=false;k.scripts.push(a);S(g,a,k,(Q&&w));w=true;if(g[z])e.wait()}})(arguments[f],arguments[f])}return e},wait:function(){if(arguments.length>0){for(var a=0;a<arguments.length;a++){h.push(arguments[a])}k=h[h.length-1]}else k=false;x();return e}};return{script:e.script,wait:e.wait,setOptions:function(a){s(a,g);return e}}}m={setGlobalDefaults:function(a){s(a,l);return m},setOptions:function(){return v().setOptions.apply(null,arguments)},script:function(){return v().script.apply(null,arguments)},wait:function(){return v().wait.apply(null,arguments)},queueScript:function(){n[n.length]={type:"script",args:[].slice.call(arguments)};return m},queueWait:function(){n[n.length]={type:"wait",args:[].slice.call(arguments)};return m},runQueue:function(){var a=m,c=n.length,b=c,d;for(;--b>=0;){d=n.shift();a=a[d.type].apply(null,d.args)}return a},noConflict:function(){o.$LAB=K;return m},sandbox:function(){return J()}};return m}o.$LAB=J();(function(a,c,b){if(document.readyState==null&&document[a]){document.readyState="loading";document[a](c,b=function(){document.removeEventListener(c,b,false);document.readyState="complete"},false)}})("addEventListener","DOMContentLoaded")})(loader);
+
 	loader.$LAB.setOptions({AlwaysPreserveOrder:true, AllowDuplicates:true});
 
 
@@ -620,6 +673,7 @@
 		var scripts = document.getElementsByTagName('script');
 		tag = scripts[scripts.length - 1];
 	}
+
 	load({
 		isDebugging: ((RegExp('debug_assets=(.+?)(&|$)').exec(location.search)||[,null])[1] === 'true'),
 		jsAssets: (function() {
