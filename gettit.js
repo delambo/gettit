@@ -107,10 +107,10 @@
 				var triggerCallback = function(fn) {
 					if (fn) templateFns.push(fn);
 					if (++seenTriggers == nTriggers) {
-						each(templateFns, function(fn) { fn() });
+						each(templateFns, function(fn) { fn(); });
 						cb();
 					}
-				}
+				};
 				fetchAssets(scripts, css, params.path, cacheBust, triggerCallback);
 				// Fetch the templates.
 				each(templates, function(template) {
