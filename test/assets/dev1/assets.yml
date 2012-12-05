@@ -10,14 +10,14 @@ compressor_options:
 
 javascripts:
   testj1:
-    - dev1/js/test1.js
-    - dev1/js/test2.js
-  ignorebundle:
-    - dev1/js/test3.js
+    - js/test1.js
+    - js/test2.js
+  testj2:
+    - js/test3.js
 
 stylesheets:
   testc1:
-    - dev1/css/test1.css
-    - dev1/css/test2.css
-  ignorebundle:
-    - dev1/css/test3.css
+    - css/test1.css
+    - css/test2.css
+  testc2:
+    - css/test3.css

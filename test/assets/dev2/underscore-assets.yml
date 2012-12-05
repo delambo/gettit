@@ -8,5 +8,5 @@ javascript_compressor: closure
 
 javascripts:
   testj1:
-    - dev2/templates/test1/test.jst
-    - dev2/templates/test2/test.jst
+    - templates/test1/test.jst
+    - templates/test2/test.jst
