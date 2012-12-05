@@ -1,0 +1,42 @@
+require 'rubygems'
+require 'jammit'
+
+# Usage:
+#   rake build
+
+# Think before you change - this directory is removed!!!
+BUILDDIR = "build"
+
+desc "minify source with jammit"
+task :build do
+
+	puts "Building to #{BUILDDIR}/"
+
+	FileUtils.rm_rf BUILDDIR, :verbose => true
+
+	Jammit.package!({
+		:config_path   => "assets.yml",
+		:output_folder => BUILDDIR
+	})
+
+	fix_css_paths
+end
+
+# Jammit will hardcode css image file urls that are document relative (../img/test.jpg)
+# with the server's working directory. This function will find all of the css files 
+# and replace the working directory path with the root relative web location (/img/..).
+#
+def fix_css_paths
+	Dir.foreach(BUILDDIR) do |file|
+		if /\.css$/.match(file) 
+			File.open(BUILDDIR + '/' + file, 'r+') do |f|
+				css = f.read
+				css.gsub!(/url\((.*?)\/img\//, 'url(/img/')
+				f.rewind
+				f.write(css)
+				f.truncate(css.length)
+			end
+		end
+	end
+end
+

@@ -1,0 +1,24 @@
+package_assets: on
+compress_assets: on
+gzip_assets: on
+template_function: _.template
+javascript_compressor: closure
+
+javascripts:
+  vendor:
+    - js/vendor/jquery.js
+    - js/vendor/underscore.js
+    - js/vendor/backbone.js
+    - js/vendor/backbone-localstorage.js
+  core:
+    - js/model/todo.js
+    - js/model/todoCollection.js
+    - js/view/todoView.js
+    - js/view/appView.js
+  template:
+    - template/item.jst
+    - template/stats.jst
+
+stylesheets:
+  core:
+    - css/todo.css
